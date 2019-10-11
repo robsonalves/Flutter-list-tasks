@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/cupertino.dart';
 import "package:flutter/material.dart";
 import "package:path_provider/path_provider.dart";
 
@@ -46,6 +47,22 @@ class _HomeState extends State<Home> {
     });
   }
 
+  Future<Null> _refreshed() async{
+    await Future.delayed(Duration(seconds: 1));
+
+    setState(() {
+      _todoList.sort((a,b){
+        if (a["ok"] && !b["ok"]) return 1;
+        else if (!a["ok"] && b["ok"]) return -1;
+        else return 0;
+      });
+
+      _saveData();
+
+
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
 
@@ -80,10 +97,13 @@ class _HomeState extends State<Home> {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-                padding: EdgeInsets.only(top: 10.0),
-                itemCount: _todoList.length,
-                itemBuilder: buildItem)
+            child: RefreshIndicator(
+              onRefresh: _refreshed,
+              child: ListView.builder(
+                  padding: EdgeInsets.only(top: 10.0),
+                  itemCount: _todoList.length,
+                  itemBuilder: buildItem),
+            )
           )
         ],
       ),
@@ -128,11 +148,16 @@ class _HomeState extends State<Home> {
             content: Text("Tarefa ${_lastRemoved["title"]} removida"),
             action: SnackBarAction(label: "Desfazer",
             onPressed: (){
-              _todoList.insert(_lastRemovedPos, _lastRemoved);
-              _saveData();},
+              setState(() {
+                _todoList.insert(_lastRemovedPos, _lastRemoved);
+                _saveData();
+              });
+              },
             ),
           duration: Duration(seconds: 2),
           );
+
+          Scaffold.of(context).showSnackBar(snack);
         });
       },
     );
